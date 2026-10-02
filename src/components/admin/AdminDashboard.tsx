@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ExtensibleSelect } from '../common/ExtensibleSelect';
+import { APP_IMAGES } from '../../assets/images';
 import { 
   Building2, 
   Users, 
@@ -172,7 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
       phone: techPhone,
       branchId: techBranchId,
       profession: techSpecialty,
-      avatarUrl: '/src/assets/images/avatar_technician_lead_1790933868861.jpg',
+      avatarUrl: APP_IMAGES.avatarLead,
     });
     setIsTechModalOpen(false);
     setTechName('');

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { JobCard, PhotoDocumentation, RegionalDiagnostics } from '../../types';
 import { VehicleBlueprint } from '../common/VehicleBlueprint';
+import { APP_IMAGES } from '../../assets/images';
 import { 
   CheckCircle2, 
   Camera, 
@@ -100,11 +101,11 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
   const handleSimulateCapture = (slotLabel: string, category: 'FUEL_METER' | 'EXTERIOR_SIDE' | 'BEFORE_DETAIL' | 'AFTER_DETAIL') => {
     if (!selectedJob) return;
 
-    let sampleUrl = '/src/assets/images/detailing_before_intake_1790933847161.jpg';
+    let sampleUrl = APP_IMAGES.beforeDetailing;
     if (category === 'AFTER_DETAIL') {
-      sampleUrl = '/src/assets/images/detailing_after_gloss_1790933858271.jpg';
+      sampleUrl = APP_IMAGES.afterDetailing;
     } else if (category === 'FUEL_METER' || slotLabel.includes('Side Profile')) {
-      sampleUrl = '/src/assets/images/hero_detailing_luxury_1790933834692.jpg';
+      sampleUrl = APP_IMAGES.heroDetailing;
     }
 
     if (category === 'AFTER_DETAIL') {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { VehicleBlueprint } from '../common/VehicleBlueprint';
+import { APP_IMAGES } from '../../assets/images';
 import { 
   CheckCircle2, 
   Printer, 
@@ -40,8 +41,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
   const [sliderPosition, setSliderPosition] = useState<number>(50);
 
   // Sample before and after images
-  const beforePhoto = myJob?.intakePhotos[0]?.url || '/src/assets/images/detailing_before_intake_1790933847161.jpg';
-  const afterPhoto = myJob?.afterPhotos[0]?.url || '/src/assets/images/detailing_after_gloss_1790933858271.jpg';
+  const beforePhoto = myJob?.intakePhotos[0]?.url || APP_IMAGES.beforeDetailing;
+  const afterPhoto = myJob?.afterPhotos[0]?.url || APP_IMAGES.afterDetailing;
 
   const handlePrintInvoice = () => {
     window.print();
