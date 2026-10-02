@@ -1,0 +1,6 @@
+{
+  "name": "Q Planet - Auto Detailing & Car Care SaaS",
+  "description": "Enterprise multi-branch car care and auto detailing management platform with Qatar ID validation, blueprint damage inspection, technician floor workflows, and customer digital reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
