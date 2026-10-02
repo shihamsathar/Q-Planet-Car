@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/common/Navbar';
 import { LoginView } from './components/auth/LoginView';
@@ -6,18 +6,36 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { TechnicianDashboard } from './components/technician/TechnicianDashboard';
 import { CustomerPortal } from './components/customer/CustomerPortal';
 import { ArchitectureDocsModal } from './components/docs/ArchitectureDocsModal';
-import { Shield, Sparkles, Building2 } from 'lucide-react';
+import { UserRole } from './types';
 
 const MainAppContent: React.FC = () => {
   const { currentUser } = useApp();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isDocsOpen, setIsDocsOpen] = useState(false);
 
-  // If not logged in, display universal login portal
+  // Automatically sync tab when user role changes or logs in
+  useEffect(() => {
+    if (!currentUser) return;
+    if (currentUser.role === 'ADMIN') {
+      setActiveTab('overview');
+    } else if (currentUser.role === 'TECHNICIAN') {
+      setActiveTab('queue');
+    } else if (currentUser.role === 'CUSTOMER') {
+      setActiveTab('status');
+    }
+  }, [currentUser?.role, currentUser?.id]);
+
+  const handleLoginSuccess = (role: UserRole) => {
+    if (role === 'ADMIN') setActiveTab('overview');
+    else if (role === 'TECHNICIAN') setActiveTab('queue');
+    else if (role === 'CUSTOMER') setActiveTab('status');
+  };
+
+  // If not logged in, display mobile-friendly universal login portal
   if (!currentUser) {
     return (
       <>
-        <LoginView onSuccess={() => setActiveTab('overview')} />
+        <LoginView onSuccess={handleLoginSuccess} />
         <ArchitectureDocsModal isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />
       </>
     );
@@ -33,8 +51,8 @@ const MainAppContent: React.FC = () => {
         onOpenArchitectureDocs={() => setIsDocsOpen(true)}
       />
 
-      {/* Main View Area */}
-      <main className="flex-1">
+      {/* Main View Area with Mobile Bottom Nav Clearance */}
+      <main className="flex-1 pb-24 md:pb-8">
         {currentUser.role === 'ADMIN' && (
           <AdminDashboard activeSubTab={activeTab} />
         )}
@@ -46,8 +64,8 @@ const MainAppContent: React.FC = () => {
         )}
       </main>
 
-      {/* Clean Enterprise Footer (anti-slop, no fake telemetry tickers) */}
-      <footer className="bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 mt-12 text-xs text-slate-500 no-print">
+      {/* Clean Enterprise Footer */}
+      <footer className="bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 mt-12 mb-16 md:mb-0 text-xs text-slate-500 no-print">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="font-extrabold text-slate-900 tracking-tight">Q PLANET</span>
@@ -61,7 +79,7 @@ const MainAppContent: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsDocsOpen(true)}
-              className="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
+              className="text-blue-600 hover:text-blue-800 font-semibold transition-colors cursor-pointer"
             >
               Database Schema &amp; REST APIs
             </button>

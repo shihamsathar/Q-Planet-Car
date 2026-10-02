@@ -50,6 +50,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
     (activeSubTab as any) || 'overview'
   );
 
+  React.useEffect(() => {
+    if (activeSubTab && ['overview', 'floor', 'jobs', 'completed', 'branches'].includes(activeSubTab)) {
+      setActiveTab(activeSubTab as any);
+    }
+  }, [activeSubTab]);
+
   // Filter jobs by selected branch (or ALL)
   const filteredJobs = currentBranchId === 'ALL' 
     ? jobCards 
@@ -249,11 +255,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
       </div>
 
       {/* Admin Subtabs Bar */}
-      <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-xl overflow-x-auto">
+      <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-xl overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
             activeTab === 'overview' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -262,29 +268,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         <button
           type="button"
           onClick={() => setActiveTab('floor')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
             activeTab === 'floor' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Live Workshop Floor ({technicians.length} Active Techs)
+          <span className="sm:hidden">Floor Grid ({technicians.length})</span>
+          <span className="hidden sm:inline">Live Workshop Floor ({technicians.length} Active Techs)</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('jobs')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
             activeTab === 'jobs' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          All Job Cards ({filteredJobs.length})
+          Job Cards ({filteredJobs.length})
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('completed')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center gap-1.5 ${
             activeTab === 'completed' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <span>Completed &amp; WhatsApp Queue</span>
+          <span>Completed &amp; WhatsApp</span>
           <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
             {completedJobs.length}
           </span>
@@ -292,11 +299,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         <button
           type="button"
           onClick={() => setActiveTab('branches')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
             activeTab === 'branches' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Branches &amp; Technician Credentials
+          <span className="sm:hidden">Branches &amp; Techs</span>
+          <span className="hidden sm:inline">Branches &amp; Technician Credentials</span>
         </button>
       </div>
 
@@ -528,7 +536,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card List (visible on phone screens) */}
+          <div className="sm:hidden divide-y divide-slate-100">
+            {filteredJobs.map((j) => {
+              const v = vehicles.find(x => x.id === j.vehicleId);
+              const c = users.find(x => x.id === j.customerId);
+              const t = users.find(x => x.id === j.assignedTechnicianId);
+
+              return (
+                <div key={j.id} className="p-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-slate-900 text-sm">{j.jobNumber}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      j.status === 'COMPLETED' || j.status === 'DELIVERED'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : j.status === 'IN_PROGRESS'
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {j.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">
+                      {v?.year} {v?.make} {v?.model}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                      Plate: {v?.plateNumber} ({v?.plateType}) · Client: {c?.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 text-xs">
+                    <span className="font-mono font-bold text-blue-600">
+                      {j.packagePriceQAR.toLocaleString()} QAR
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenReview(j)}
+                      className="px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 active:bg-blue-100 rounded-lg min-h-[36px] transition-colors"
+                    >
+                      Review &amp; WhatsApp
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-semibold text-[11px]">
@@ -759,27 +814,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
 
       {/* MODAL 1: CREATE DETAILED JOB CARD */}
       {isJobModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-8">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50 shrink-0">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
                   Create Enterprise Job Card
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Detailed customer registration, Qatar vehicle specifications, and technician assignment.
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                  Customer registration, Qatar vehicle specs &amp; technician assignment.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsJobModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 font-bold text-sm"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateJob} className="p-6 space-y-6">
+            <form onSubmit={handleCreateJob} className="p-4 sm:p-6 space-y-5 overflow-y-auto">
               
               {/* Branch & Technician Assignment */}
               <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1002,20 +1057,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
 
       {/* MODAL 2: ADD NEW BRANCH */}
       {isBranchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50 shrink-0">
               <h3 className="text-sm font-extrabold text-slate-900">Provision New Qatar Branch</h3>
               <button
                 type="button"
                 onClick={() => setIsBranchModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateBranch} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleCreateBranch} className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Branch Facility Name *</label>
                 <input
@@ -1098,13 +1153,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
                 <button
                   type="button"
                   onClick={() => setIsBranchModalOpen(false)}
-                  className="px-3.5 py-2 text-slate-600 hover:text-slate-900"
+                  className="px-3.5 py-2 text-slate-600 hover:text-slate-900 min-h-[40px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-xs"
+                  className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-xs min-h-[40px]"
                 >
                   Deploy Branch
                 </button>
@@ -1116,20 +1171,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
 
       {/* MODAL 3: CREATE TECHNICIAN CREDENTIALS */}
       {isTechModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50 shrink-0">
               <h3 className="text-sm font-extrabold text-slate-900">Provision Technician Credentials</h3>
               <button
                 type="button"
                 onClick={() => setIsTechModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateTechnician} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleCreateTechnician} className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Technician Full Name *</label>
                 <input
@@ -1196,13 +1251,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
                 <button
                   type="button"
                   onClick={() => setIsTechModalOpen(false)}
-                  className="px-3.5 py-2 text-slate-600 hover:text-slate-900"
+                  className="px-3.5 py-2 text-slate-600 hover:text-slate-900 min-h-[40px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-xs"
+                  className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-xs min-h-[40px]"
                 >
                   Create Technician
                 </button>
@@ -1214,9 +1269,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
 
       {/* MODAL 4: FINAL REPORT REVIEW & WHATSAPP GENERATION */}
       {reviewJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-          <div className="w-full max-w-3xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-8">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-3xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50 shrink-0">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-900 font-mono">{reviewJob.jobNumber}</span>
@@ -1231,7 +1286,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
               <button
                 type="button"
                 onClick={() => setReviewJob(null)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 font-bold"
               >
                 ✕
               </button>

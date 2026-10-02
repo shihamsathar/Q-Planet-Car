@@ -74,6 +74,15 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
     }
   }, [selectedJobId]);
 
+  // Sync subtab with workflow step
+  React.useEffect(() => {
+    if (activeSubTab === 'intake') {
+      setWorkflowStep('intake');
+    } else if (activeSubTab === 'completion') {
+      setWorkflowStep('completion');
+    }
+  }, [activeSubTab]);
+
   // Intake Photo Slots Configuration (1 Fuel + 4 Exterior + 5 Before Details = 10 slots)
   const mandatoryIntakeSlots = [
     { key: 'fuel', label: '1. Fuel Meter & Dashboard Odometer', category: 'FUEL_METER' as const },
@@ -308,42 +317,45 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
           </div>
 
           {/* Workflow Stage Tabs */}
-          <div className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-xl">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 p-1 bg-slate-200/80 rounded-xl">
             <button
               type="button"
               onClick={() => setWorkflowStep('intake')}
-              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 min-h-[44px] ${
                 workflowStep === 'intake'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Camera className="w-4 h-4 text-blue-600" />
-              <span>1. Vehicle Intake &amp; Damage Map ({intakeCount}/10 Photos)</span>
+              <Camera className="w-4 h-4 text-blue-600 shrink-0" />
+              <span className="sm:hidden">1. Intake &amp; Damage Map ({intakeCount}/10)</span>
+              <span className="hidden sm:inline">1. Vehicle Intake &amp; Damage Map ({intakeCount}/10 Photos)</span>
             </button>
             <button
               type="button"
               onClick={() => setWorkflowStep('diagnostics')}
-              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 min-h-[44px] ${
                 workflowStep === 'diagnostics'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Thermometer className="w-4 h-4 text-amber-600" />
-              <span>2. Regional Qatar Diagnostics (AC &amp; Sand Check)</span>
+              <Thermometer className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="sm:hidden">2. Qatar Diagnostics</span>
+              <span className="hidden sm:inline">2. Regional Qatar Diagnostics (AC &amp; Sand Check)</span>
             </button>
             <button
               type="button"
               onClick={() => setWorkflowStep('completion')}
-              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 min-h-[44px] ${
                 workflowStep === 'completion'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>3. Completion &amp; After Photos ({afterCount}/5 Photos)</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="sm:hidden">3. Completion &amp; Photos ({afterCount}/5)</span>
+              <span className="hidden sm:inline">3. Completion &amp; After Photos ({afterCount}/5 Photos)</span>
             </button>
           </div>
 

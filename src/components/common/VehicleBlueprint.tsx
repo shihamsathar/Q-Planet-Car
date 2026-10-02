@@ -27,13 +27,26 @@ export const VehicleBlueprint: React.FC<VehicleBlueprintProps> = ({
 
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleSvgClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleSvgClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (readOnly || !onAddMark) return;
-
     if (!svgContainerRef.current) return;
+
+    let clientX = 0;
+    let clientY = 0;
+
+    if ('touches' in e && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if ('clientX' in e) {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
+    } else {
+      return;
+    }
+
     const rect = svgContainerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
 
     // Approximate panel based on coordinates and active view
     let suggestedPanel = 'Chassis Surface';
@@ -51,8 +64,8 @@ export const VehicleBlueprint: React.FC<VehicleBlueprintProps> = ({
 
     setPanelName(suggestedPanel);
     setPendingCoords({
-      xPercent: Math.round(x * 10) / 10,
-      yPercent: Math.round(y * 10) / 10,
+      xPercent: Math.max(2, Math.min(98, Math.round(x * 10) / 10)),
+      yPercent: Math.max(2, Math.min(98, Math.round(y * 10) / 10)),
     });
     setNotes('');
   };
@@ -110,24 +123,24 @@ export const VehicleBlueprint: React.FC<VehicleBlueprintProps> = ({
         </div>
 
         {/* View Switcher Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg shrink-0 overflow-x-auto max-w-full scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveView('top')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap min-h-[36px] ${
               activeView === 'top'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Top View (Full Body)
+            Top View
           </button>
           <button
             type="button"
             onClick={() => setActiveView('sides')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap min-h-[36px] ${
               activeView === 'sides'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -136,9 +149,9 @@ export const VehicleBlueprint: React.FC<VehicleBlueprintProps> = ({
           <button
             type="button"
             onClick={() => setActiveView('front_rear')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap min-h-[36px] ${
               activeView === 'front_rear'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -148,14 +161,14 @@ export const VehicleBlueprint: React.FC<VehicleBlueprintProps> = ({
       </div>
 
       {/* Blueprint Visual Canvas */}
-      <div className="p-4 bg-slate-50/30 flex flex-col items-center">
+      <div className="p-3 sm:p-4 bg-slate-50/30 flex flex-col items-center">
         <div
           ref={svgContainerRef}
           onClick={handleSvgClick}
-          className={`relative w-full max-w-2xl bg-white border border-slate-200 rounded-lg p-6 shadow-2xs select-none ${
+          className={`relative w-full max-w-2xl bg-white border border-slate-200 rounded-lg p-3 sm:p-6 shadow-2xs select-none ${
             readOnly ? 'cursor-default' : 'cursor-crosshair hover:border-blue-400'
           }`}
-          style={{ minHeight: '340px' }}
+          style={{ minHeight: '320px', touchAction: 'manipulation' }}
         >
           {/* Subtle blueprint grid watermark */}
           <div 
@@ -439,8 +452,8 @@ export const VehicleBlueprint: React.FC<VehicleBlueprintProps> = ({
       {/* Add Mark Popover Modal */}
       {pendingCoords && !readOnly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50 sticky top-0 z-10">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   Log Body Damage Point

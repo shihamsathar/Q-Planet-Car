@@ -37,6 +37,12 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
     (activeSubTab as any) || 'status'
   );
 
+  React.useEffect(() => {
+    if (activeSubTab && ['status', 'blueprint', 'comparison', 'invoice'].includes(activeSubTab)) {
+      setActiveView(activeSubTab as any);
+    }
+  }, [activeSubTab]);
+
   // Before & After comparison slider state (0 to 100)
   const [sliderPosition, setSliderPosition] = useState<number>(50);
 
@@ -85,13 +91,13 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
           </p>
         </div>
 
-        {/* View Switcher Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg shrink-0">
+        {/* View Switcher Tabs (Mobile Scrollable) */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl overflow-x-auto w-full sm:w-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveView('status')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              activeView === 'status' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+              activeView === 'status' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Overview
@@ -99,8 +105,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
           <button
             type="button"
             onClick={() => setActiveView('comparison')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              activeView === 'comparison' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+              activeView === 'comparison' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Before &amp; After
@@ -108,8 +114,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
           <button
             type="button"
             onClick={() => setActiveView('blueprint')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              activeView === 'blueprint' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+              activeView === 'blueprint' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Damage Map
@@ -117,8 +123,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
           <button
             type="button"
             onClick={() => setActiveView('invoice')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              activeView === 'invoice' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+              activeView === 'invoice' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Digital Invoice
@@ -131,19 +137,19 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
         <div className="space-y-6 no-print">
           
           {/* Real-Time Live Status Tracker */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Live Detailing Progression</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Job Reference: <span className="font-mono font-semibold">{myJob?.jobNumber}</span></p>
               </div>
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                {myJob?.status === 'COMPLETED' || myJob?.status === 'DELIVERED' ? 'Ready for Delivery / Inspection' : 'Service in Progress'}
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 self-start sm:self-auto">
+                {myJob?.status === 'COMPLETED' || myJob?.status === 'DELIVERED' ? 'Ready for Pickup' : 'Service in Progress'}
               </span>
             </div>
 
             {/* Stepper Bar */}
-            <div className="mt-8 relative">
+            <div className="mt-8 relative px-2">
               <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -translate-y-1/2 z-0" />
               <div
                 className="absolute top-1/2 left-0 h-1 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-500"
@@ -152,29 +158,30 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
 
               <div className="relative z-10 flex justify-between">
                 {[
-                  { step: 1, label: 'Intake Accepted', desc: 'Registered in Bay' },
-                  { step: 2, label: 'Body Inspection', desc: 'Blueprint & Photos' },
-                  { step: 3, label: 'Precision Detailing', desc: 'Compound & Polish' },
-                  { step: 4, label: 'Quality Verification', desc: 'Paint & Gloss Audit' },
-                  { step: 5, label: 'Ready for Pickup', desc: 'Finalized & Cleaned' },
+                  { step: 1, label: 'Intake', fullLabel: 'Intake Accepted', desc: 'Registered in Bay' },
+                  { step: 2, label: 'Inspect', fullLabel: 'Body Inspection', desc: 'Blueprint & Photos' },
+                  { step: 3, label: 'Detail', fullLabel: 'Precision Detailing', desc: 'Compound & Polish' },
+                  { step: 4, label: 'Quality', fullLabel: 'Quality Verification', desc: 'Gloss Audit' },
+                  { step: 5, label: 'Pickup', fullLabel: 'Ready for Pickup', desc: 'Finalized & Cleaned' },
                 ].map((s) => {
                   const isDone = currentStep >= s.step;
                   const isCurrent = currentStep === s.step;
                   return (
-                    <div key={s.step} className="flex flex-col items-center text-center max-w-[100px]">
+                    <div key={s.step} className="flex flex-col items-center text-center max-w-[65px] sm:max-w-[100px]">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-bold transition-all ${
                           isDone
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
                             : 'bg-white border-2 border-slate-200 text-slate-400'
                         }`}
                       >
-                        {isDone ? <CheckCircle2 className="w-4 h-4" /> : s.step}
+                        {isDone ? <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : s.step}
                       </div>
-                      <span className={`text-xs font-bold mt-2 ${isCurrent ? 'text-blue-600' : 'text-slate-800'}`}>
-                        {s.label}
+                      <span className={`text-[10px] sm:text-xs font-bold mt-1.5 sm:mt-2 line-clamp-1 ${isCurrent ? 'text-blue-600' : 'text-slate-800'}`}>
+                        <span className="sm:hidden">{s.label}</span>
+                        <span className="hidden sm:inline">{s.fullLabel}</span>
                       </span>
-                      <span className="text-[10px] text-slate-400 mt-0.5 hidden sm:block">
+                      <span className="text-[9px] text-slate-400 mt-0.5 hidden md:block">
                         {s.desc}
                       </span>
                     </div>
@@ -314,21 +321,18 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
               AFTER: 9H Mirror Ceramic Finish
             </div>
 
-            {/* Before Image (Clipped by slider position) */}
-            <div
-              className="absolute inset-0 overflow-hidden"
-              style={{ width: `${sliderPosition}%` }}
-            >
-              <img
-                src={beforePhoto}
-                alt="Before Detailing Condition"
-                className="absolute inset-0 w-full h-full object-cover max-w-none"
-                style={{ width: '100%', height: '100%' }}
-              />
+            {/* Before Image (Clipped smoothly with CSS clipPath) */}
+            <img
+              src={beforePhoto}
+              alt="Before Detailing Condition"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+            />
+            {sliderPosition > 15 && (
               <div className="absolute top-4 left-4 bg-slate-900/80 text-white font-bold text-xs px-2.5 py-1 rounded-md shadow-xs pointer-events-none">
                 BEFORE: Desert Dust &amp; Swirl Marks
               </div>
-            </div>
+            )}
 
             {/* Divider Line */}
             <div
@@ -347,13 +351,45 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
               max="100"
               value={sliderPosition}
               onChange={(e) => setSliderPosition(Number(e.target.value))}
+              style={{ touchAction: 'none' }}
               className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
               aria-label="Before and after comparison slider"
             />
           </div>
 
+          {/* Mobile-Friendly Slider Preset Controls */}
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setSliderPosition(0)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors min-h-[36px] ${
+                sliderPosition === 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+            >
+              Show Full Before
+            </button>
+            <button
+              type="button"
+              onClick={() => setSliderPosition(50)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors min-h-[36px] ${
+                sliderPosition === 50 ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+            >
+              50/50 Split View
+            </button>
+            <button
+              type="button"
+              onClick={() => setSliderPosition(100)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors min-h-[36px] ${
+                sliderPosition === 100 ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+            >
+              Show Full After
+            </button>
+          </div>
+
           <div className="text-center text-xs text-slate-500">
-            Slide horizontally across the image to reveal 100% paint correction and high-gloss water repellency.
+            Slide horizontally across the image or tap presets above to inspect 100% paint correction and ceramic gloss.
           </div>
 
           {/* Before & After Photo Gallery */}

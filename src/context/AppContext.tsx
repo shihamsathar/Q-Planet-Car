@@ -187,12 +187,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Login handler
   const login = (credential: string, _password?: string) => {
     const cleanCred = credential.trim();
-    // Try matching username, QID, or email
-    const matched = users.find(u => 
-      u.username.toLowerCase() === cleanCred.toLowerCase() ||
-      u.qid === cleanCred ||
-      u.email.toLowerCase() === cleanCred.toLowerCase()
-    );
+    if (!cleanCred) {
+      return { success: false, message: 'Please enter your Qatar ID, username, or email.' };
+    }
+    const normalizedDigits = cleanCred.replace(/[^0-9]/g, '');
+
+    // Try matching username, QID, email, or phone number
+    const matched = users.find(u => {
+      const uDigits = u.qid.replace(/[^0-9]/g, '');
+      const uPhoneDigits = u.phone.replace(/[^0-9]/g, '');
+
+      return (
+        u.username.toLowerCase() === cleanCred.toLowerCase() ||
+        u.email.toLowerCase() === cleanCred.toLowerCase() ||
+        u.qid === cleanCred ||
+        (normalizedDigits.length >= 8 && uDigits === normalizedDigits) ||
+        (normalizedDigits.length >= 8 && uPhoneDigits.endsWith(normalizedDigits))
+      );
+    });
 
     if (matched) {
       setCurrentUser(matched);
@@ -206,6 +218,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    localStorage.removeItem(`${STORAGE_KEY}_user`);
     setCurrentUser(null);
   };
 
