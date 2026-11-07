@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { ShieldCheck, ArrowRight, Lock, User, Sparkles, Check, KeyRound, Eye, EyeOff, Zap, Car, Wrench, ShieldAlert } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  ArrowRight, 
+  Lock, 
+  User, 
+  Sparkles, 
+  Eye, 
+  EyeOff, 
+  Zap, 
+  Car, 
+  Wrench, 
+  ShieldAlert,
+  Image as ImageIcon
+} from 'lucide-react';
 import { UserRole } from '../../types';
+import { APP_IMAGES } from '../../assets/images';
 
 interface LoginViewProps {
   onSuccess?: (role: UserRole) => void;
@@ -12,6 +26,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
   const [credential, setCredential] = useState('admin@qplanet.qa');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
+  const [showVehicleBg, setShowVehicleBg] = useState(true);
   const [activeRoleTab, setActiveRoleTab] = useState<UserRole>('ADMIN');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -88,23 +103,85 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
+    <div className={`relative min-h-screen flex flex-col justify-center py-6 sm:py-12 px-3 sm:px-6 lg:px-8 overflow-hidden transition-colors duration-500 ${
+      showVehicleBg ? 'bg-slate-950' : 'bg-slate-50'
+    }`}>
+      
+      {/* Vehicle Picture Background */}
+      {showVehicleBg && (
+        <div className="absolute inset-0 z-0 select-none pointer-events-none">
+          <img
+            src={APP_IMAGES.heroDetailing}
+            alt="Luxury vehicle detailing studio background"
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover object-center filter brightness-[0.4] contrast-[1.12] saturate-[1.1] scale-105 animate-in fade-in duration-700"
+          />
+          {/* Subtle multi-layer atmospheric gradient to guarantee contrast & readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-slate-950/85" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-600/10 via-transparent to-slate-950/70" />
+          
+          {/* Subtle architectural grid lines */}
+          <div 
+            className="absolute inset-0 opacity-[0.035]"
+            style={{
+              backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
+              backgroundSize: '28px 28px',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Top Controls: Background Switcher & Qatar Flagship Tag */}
+      <div className="relative z-20 w-full max-w-md mx-auto mb-3 flex items-center justify-between px-2">
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold backdrop-blur-md border transition-all ${
+          showVehicleBg 
+            ? 'bg-slate-900/70 text-slate-200 border-white/10' 
+            : 'bg-white text-slate-700 border-slate-200 shadow-2xs'
+        }`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>State of Qatar Detailing Studio</span>
+        </div>
+
+        {/* Toggle Background Button */}
+        <button
+          type="button"
+          onClick={() => setShowVehicleBg(!showVehicleBg)}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium backdrop-blur-md border transition-all cursor-pointer ${
+            showVehicleBg
+              ? 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs'
+          }`}
+          title="Toggle Vehicle Picture Background"
+        >
+          <ImageIcon className="w-3.5 h-3.5" />
+          <span>{showVehicleBg ? 'Photo BG' : 'Light BG'}</span>
+        </button>
+      </div>
+
       {/* Brand Header */}
-      <div className="w-full max-w-md mx-auto text-center px-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/25 mb-3">
+      <div className="relative z-10 w-full max-w-md mx-auto text-center px-2">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-500/30 mb-3 border border-white/20">
           <Sparkles className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+        <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight transition-colors ${
+          showVehicleBg ? 'text-white drop-shadow-md' : 'text-slate-900'
+        }`}>
           Q Planet Car Care
         </h1>
-        <p className="mt-1 text-xs sm:text-sm text-slate-500">
-          State of Qatar · Multi-Branch Auto Detailing &amp; Workshop SaaS
+        <p className={`mt-1 text-xs sm:text-sm font-medium transition-colors ${
+          showVehicleBg ? 'text-slate-200 drop-shadow-xs' : 'text-slate-500'
+        }`}>
+          Enterprise Auto Detailing &amp; Workshop SaaS Platform
         </p>
       </div>
 
       {/* Main Login Card */}
-      <div className="mt-5 sm:mt-6 w-full max-w-md mx-auto">
-        <div className="bg-white py-6 sm:py-8 px-4 sm:px-8 border border-slate-200/90 rounded-2xl shadow-xl shadow-slate-200/50">
+      <div className="relative z-10 mt-5 w-full max-w-md mx-auto">
+        <div className={`py-6 sm:py-8 px-4 sm:px-8 rounded-3xl shadow-2xl transition-all duration-300 ${
+          showVehicleBg 
+            ? 'bg-white/95 backdrop-blur-xl border border-white/60 shadow-black/50' 
+            : 'bg-white border border-slate-200/90 shadow-slate-200/50'
+        }`}>
           
           <div className="mb-4 pb-3 border-b border-slate-100">
             <h2 className="text-base font-bold text-slate-900 flex items-center justify-between">
@@ -114,7 +191,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Enter your credentials or use 1-tap instant mobile access below.
+              Enter credentials or tap a profile below for instant access.
             </p>
           </div>
 
@@ -252,6 +329,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
 
         </div>
       </div>
+
+      {/* Footer Branches Pill */}
+      <div className="relative z-10 mt-6 text-center">
+        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] backdrop-blur-md border transition-all ${
+          showVehicleBg
+            ? 'bg-slate-900/60 border-white/10 text-slate-300'
+            : 'bg-white border-slate-200 text-slate-500 shadow-2xs'
+        }`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+          <span>The Pearl · Lusail Marina · Al Wakrah · Doha Industrial</span>
+        </div>
+      </div>
+
     </div>
   );
 };

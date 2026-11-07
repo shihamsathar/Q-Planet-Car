@@ -221,9 +221,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
-      {/* Top Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
-        <div>
+      {/* Top Header Row with Subtle Vehicle Watermark */}
+      <div className="relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs">
+        {/* Subtle vehicle studio backdrop watermark */}
+        <div className="absolute right-0 top-0 bottom-0 w-2/5 max-w-sm pointer-events-none opacity-15 hidden md:block select-none overflow-hidden">
+          <img
+            src={APP_IMAGES.heroDetailing}
+            alt="Vehicle backdrop watermark"
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover object-center filter grayscale contrast-125"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
+            }}
+          />
+        </div>
+
+        <div className="relative z-10">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wider">
               Super Admin Console
@@ -242,7 +256,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         </div>
 
         {/* Action Button: Create Job Card */}
-        <div className="flex items-center gap-2">
+        <div className="relative z-10 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setIsJobModalOpen(true)}
@@ -259,7 +273,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         <button
           type="button"
           onClick={() => setActiveTab('overview')}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center cursor-pointer ${
             activeTab === 'overview' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -268,7 +282,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         <button
           type="button"
           onClick={() => setActiveTab('floor')}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center cursor-pointer ${
             activeTab === 'floor' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -278,7 +292,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         <button
           type="button"
           onClick={() => setActiveTab('jobs')}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center cursor-pointer ${
             activeTab === 'jobs' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -287,7 +301,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         <button
           type="button"
           onClick={() => setActiveTab('completed')}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'completed' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -299,7 +313,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
         <button
           type="button"
           onClick={() => setActiveTab('branches')}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center ${
+          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-h-[40px] flex items-center justify-center cursor-pointer ${
             activeTab === 'branches' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -311,6 +325,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
       {/* TAB 1: OVERVIEW METRICS */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Featured Detailing Studio Showcase Hero Banner */}
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 shadow-sm bg-slate-950 text-white min-h-[170px] flex items-center">
+            {/* Background Vehicle Photograph */}
+            <div className="absolute inset-0 z-0 select-none">
+              <img
+                src={APP_IMAGES.heroDetailing}
+                alt="Q Planet Luxury Detailing Studio"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover object-center filter brightness-[0.45] contrast-[1.15] scale-100"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
+            </div>
+
+            {/* Banner Content */}
+            <div className="relative z-10 p-5 sm:p-7 max-w-2xl space-y-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/25 border border-blue-400/30 text-[11px] font-bold text-blue-200 backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+                <span>Qatar Flagship Auto Detailing Network</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-white drop-shadow-sm">
+                Pristine Ceramic Coating &amp; Paint Protection Standards
+              </h2>
+              <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+                Supervising active floor operations, scratch diagnosis, and automated tax billing across The Pearl, Lusail Marina, Al Wakrah, and Doha Industrial detailing bays.
+              </p>
+            </div>
+          </div>
           {/* Key Metric Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             

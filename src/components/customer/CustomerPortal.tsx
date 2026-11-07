@@ -17,7 +17,8 @@ import {
   Wind,
   Layers,
   Calendar,
-  CreditCard
+  CreditCard,
+  Car
 } from 'lucide-react';
 
 interface CustomerPortalProps {
@@ -136,6 +137,40 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
       {activeView === 'status' && (
         <div className="space-y-6 no-print">
           
+          {/* Customer Vehicle Picture Showcase Banner */}
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 shadow-sm bg-slate-950 text-white min-h-[140px] flex items-center">
+            <div className="absolute inset-0 z-0 select-none">
+              <img
+                src={APP_IMAGES.heroDetailing}
+                alt="Enrolled Luxury Vehicle"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover object-center filter brightness-[0.45] contrast-[1.12]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
+            </div>
+            <div className="relative z-10 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/25 text-blue-300 text-[11px] font-bold border border-blue-400/30 mb-1.5 backdrop-blur-md">
+                  <Car className="w-3.5 h-3.5" />
+                  <span>VIP Detailing Enrolled</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                  {myVehicle?.year} {myVehicle?.make} {myVehicle?.model}
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Package: <span className="font-semibold text-white">{myJob?.servicePackage}</span> · Colour: <span className="text-slate-200">{myVehicle?.color}</span>
+                </p>
+              </div>
+              <div className="bg-slate-900/80 backdrop-blur-md border border-white/15 px-4 py-2.5 rounded-xl text-left sm:text-right self-start sm:self-auto shadow-md">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Qatar Registration</span>
+                <span className="font-mono font-extrabold text-white text-base tracking-wide">
+                  {myVehicle?.plateNumber}
+                </span>
+                <span className="text-[10px] text-blue-300 block font-semibold">({myVehicle?.plateType})</span>
+              </div>
+            </div>
+          </div>
+
           {/* Real-Time Live Status Tracker */}
           <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
