@@ -23,7 +23,9 @@ import {
   Sparkles,
   Smartphone,
   PhoneCall,
-  DollarSign
+  DollarSign,
+  UserPlus,
+  Key
 } from 'lucide-react';
 import { JobCard, User, Branch } from '../../types';
 
@@ -43,7 +45,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
     finalizeJobAndInvoice, 
     generateWhatsAppLink,
     addBranch,
-    addUser 
+    addUser,
+    getDropdownItems 
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'floor' | 'jobs' | 'completed' | 'branches'>(
@@ -62,6 +65,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
     : jobCards.filter(j => j.branchId === currentBranchId);
 
   const technicians = users.filter(u => u.role === 'TECHNICIAN');
+  const customers = users.filter(u => u.role === 'CUSTOMER');
   const completedJobs = filteredJobs.filter(j => j.status === 'COMPLETED' || j.status === 'DELIVERED');
 
   // Job Card Creation Modal state
@@ -104,6 +108,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
   const [techBranchId, setTechBranchId] = useState(branches[0]?.id || '');
   const [techSpecialty, setTechSpecialty] = useState('Senior Ceramic & Detailing Specialist');
 
+  // Customer Management Modal state
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [newCustName, setNewCustName] = useState('');
+  const [newCustQid, setNewCustQid] = useState('');
+  const [newCustPhone, setNewCustPhone] = useState('+974 55');
+  const [newCustEmail, setNewCustEmail] = useState('');
+  const [newCustProfession, setNewCustProfession] = useState('Petroleum Operations Specialist');
+  const [newCustBranchId, setNewCustBranchId] = useState(branches[0]?.id || 'br-pearl');
+  const [custModalError, setCustModalError] = useState('');
+  const [createdCustWhatsApp, setCreatedCustWhatsApp] = useState<{ name: string; phone: string; qid: string; password?: string; url: string; message: string } | null>(null);
+
   // Completed Job Final Review & WhatsApp Modal state
   const [reviewJob, setReviewJob] = useState<JobCard | null>(null);
   const [finalPrice, setFinalPrice] = useState<number>(0);
@@ -116,6 +131,80 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
   const validateQid = (qid: string): boolean => {
     const clean = qid.trim();
     return /^\d{11}$/.test(clean);
+  };
+
+  // Synchronize vehicle model when make changes
+  const handleMakeChange = (newMake: string) => {
+    setVehMake(newMake);
+    const models = getDropdownItems('VEHICLE_MODEL', newMake);
+    if (models.length > 0) {
+      setVehModel(models[0].value);
+    } else {
+      setVehModel('');
+    }
+  };
+
+  // Auto-fill customer details if QID already exists in database
+  const handleQidChange = (val: string) => {
+    setCustQid(val);
+    const clean = val.trim();
+    if (clean.length === 11) {
+      const existing = users.find(u => u.qid === clean);
+      if (existing) {
+        setCustName(existing.name);
+        if (existing.phone) setCustPhone(existing.phone);
+        if (existing.profession) setCustProfession(existing.profession);
+        if (existing.branchId) setTargetBranchId(existing.branchId);
+      }
+    }
+  };
+
+  const handleCreateCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateQid(newCustQid)) {
+      setCustModalError('Qatar ID (QID) must be exactly 11 digits (e.g. 29463401234)');
+      return;
+    }
+    setCustModalError('');
+
+    const generatedPassword = `QP#${Math.floor(1000 + Math.random() * 9000)}`;
+    addUser({
+      username: newCustQid.trim(),
+      name: newCustName.trim(),
+      role: 'CUSTOMER',
+      qid: newCustQid.trim(),
+      email: newCustEmail.trim() || `${newCustName.toLowerCase().replace(/\s+/g, '.')}@client.qplanet.qa`,
+      phone: newCustPhone.trim(),
+      branchId: newCustBranchId,
+      profession: newCustProfession.trim(),
+    });
+
+    const portalUrl = window.location.origin;
+    const msg = `🚗 *Q Planet Car Care & Auto Detailing - Qatar*\n\n` +
+      `Dear ${newCustName},\n` +
+      `Your customer portal access has been provisioned.\n\n` +
+      `🌐 *Portal Link:* ${portalUrl}\n` +
+      `👤 *Username (QID):* ${newCustQid.trim()}\n` +
+      `🔑 *Initial Passcode:* ${generatedPassword}\n\n` +
+      `Thank you for trusting Q Planet Auto Detailing.`;
+
+    const encoded = encodeURIComponent(msg);
+    const cleanPhone = newCustPhone.replace(/[^0-9]/g, '');
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encoded}`;
+
+    setCreatedCustWhatsApp({
+      name: newCustName,
+      phone: newCustPhone,
+      qid: newCustQid.trim(),
+      password: generatedPassword,
+      url: waUrl,
+      message: msg,
+    });
+
+    // Reset inputs
+    setNewCustName('');
+    setNewCustQid('');
+    setNewCustEmail('');
   };
 
   const handleCreateJob = (e: React.FormEvent) => {
@@ -850,6 +939,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
             </div>
           </div>
 
+          {/* Registered Customers Section */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Registered Customer Accounts</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Admin-provisioned credentials and Qatar ID logins for vehicle owners.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCustomerModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer shrink-0"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Create Customer Account</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {customers.map((c) => {
+                const cBranch = branches.find(b => b.id === c.branchId);
+                const cVehicles = vehicles.filter(v => v.customerId === c.id);
+                const cJobs = jobCards.filter(j => j.customerId === c.id);
+                return (
+                  <div key={c.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
+                        {c.name.split(' ').map(x => x[0]).join('')}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 truncate">{c.name}</h4>
+                        <p className="text-[11px] text-slate-500 font-mono">QID: {c.qid}</p>
+                      </div>
+                    </div>
+                    <p className="text-slate-600 text-[11px] truncate">{c.profession || 'Enterprise Client'}</p>
+                    <div className="flex items-center justify-between text-slate-400 font-mono text-[10px] pt-1 border-t border-slate-200/60">
+                      <span>{c.phone}</span>
+                      <span className="font-sans font-medium text-blue-600">{cVehicles.length} car{cVehicles.length !== 1 ? 's' : ''} ({cJobs.length} jobs)</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -939,7 +1072,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
                       required
                       maxLength={11}
                       value={custQid}
-                      onChange={(e) => setCustQid(e.target.value.replace(/[^0-9]/g, ''))}
+                      onChange={(e) => handleQidChange(e.target.value.replace(/[^0-9]/g, ''))}
                       placeholder="e.g. 29463401234"
                       className="w-full h-10 px-3 text-xs font-mono font-bold bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
@@ -984,7 +1117,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
                     label="Vehicle Make"
                     category="VEHICLE_MAKE"
                     value={vehMake}
-                    onChange={setVehMake}
+                    onChange={handleMakeChange}
                   />
 
                   {/* Extensible Model (Filtered by Make) */}
@@ -1456,6 +1589,199 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeSubTab = '
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: CREATE CUSTOMER ACCOUNT */}
+      {isCustomerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Provision Client Account</h3>
+                  <p className="text-[11px] text-slate-500">Create login credentials with 11-digit Qatar ID.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsCustomerModalOpen(false); setCustModalError(''); }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomer} className="p-5 space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Customer Full Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newCustName}
+                  onChange={(e) => setNewCustName(e.target.value)}
+                  placeholder="e.g. Dr. Rashid Al-Kuwari"
+                  className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Qatar ID (11 Digits) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={11}
+                    value={newCustQid}
+                    onChange={(e) => setNewCustQid(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="29463401234"
+                    className="w-full h-10 px-3 font-mono font-bold bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  {custModalError && <p className="text-[10px] text-rose-600 font-semibold mt-1">{custModalError}</p>}
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Mobile Phone (+974) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newCustPhone}
+                    onChange={(e) => setNewCustPhone(e.target.value)}
+                    placeholder="+974 5512 3456"
+                    className="w-full h-10 px-3 font-mono bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={newCustEmail}
+                  onChange={(e) => setNewCustEmail(e.target.value)}
+                  placeholder="client@domain.qa (optional)"
+                  className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Home / Preferred Branch</label>
+                  <select
+                    value={newCustBranchId}
+                    onChange={(e) => setNewCustBranchId(e.target.value)}
+                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-slate-900"
+                  >
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Profession</label>
+                  <input
+                    type="text"
+                    value={newCustProfession}
+                    onChange={(e) => setNewCustProfession(e.target.value)}
+                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setIsCustomerModalOpen(false); setCustModalError(''); }}
+                  className="px-3.5 py-2 text-slate-600 hover:text-slate-900 min-h-[40px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-xs hover:bg-blue-700 transition-colors min-h-[40px]"
+                >
+                  Provision &amp; Create Credentials
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: CUSTOMER CREATED & WHATSAPP LINK POPUP */}
+      {createdCustWhatsApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-emerald-50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Account Provisioned Successfully</h3>
+                  <p className="text-[11px] text-emerald-800">Login credentials generated for {createdCustWhatsApp.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCreatedCustWhatsApp(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 font-mono text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-sans">Username (QID):</span>
+                  <strong className="text-slate-900">{createdCustWhatsApp.qid}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-sans">Passcode:</span>
+                  <strong className="text-emerald-700">{createdCustWhatsApp.password}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-sans">Mobile:</span>
+                  <span className="text-slate-800">{createdCustWhatsApp.phone}</span>
+                </div>
+              </div>
+
+              {/* Simulated WhatsApp message */}
+              <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl font-mono text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed">
+                {createdCustWhatsApp.message}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
+                <a
+                  href={createdCustWhatsApp.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send via WhatsApp</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setCreatedCustWhatsApp(null)}
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 rounded-lg"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         </div>

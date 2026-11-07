@@ -33,6 +33,7 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
     users, 
     branches,
     startJob,
+    updateJobCard,
     addDamageMark,
     removeDamageMark,
     addIntakePhoto,
@@ -53,6 +54,15 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
     const active = myJobs.find(j => j.status === 'IN_INSPECTION' || j.status === 'IN_PROGRESS' || j.status === 'ASSIGNED');
     return active ? active.id : (myJobs[0]?.id || '');
   });
+
+  // Resync selectedJobId if current selection is invalid or when myJobs changes
+  React.useEffect(() => {
+    const isCurrentValid = myJobs.some(j => j.id === selectedJobId);
+    if (!isCurrentValid && myJobs.length > 0) {
+      const active = myJobs.find(j => j.status === 'IN_INSPECTION' || j.status === 'IN_PROGRESS' || j.status === 'ASSIGNED');
+      setSelectedJobId(active ? active.id : myJobs[0].id);
+    }
+  }, [currentUser?.id, myJobs, selectedJobId]);
 
   const [workflowStep, setWorkflowStep] = useState<'intake' | 'diagnostics' | 'completion'>('intake');
 
@@ -105,6 +115,43 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
     { key: 'aft_interior', label: '4. Deep Cleaned & Nourished Leather Cabin', category: 'AFTER_DETAIL' as const },
     { key: 'aft_rims', label: '5. Restored & Ceramic Coated Wheel Barrels', category: 'AFTER_DETAIL' as const },
   ];
+
+  // Real file or device camera upload handler
+  const handleFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    slotLabel: string,
+    category: 'FUEL_METER' | 'EXTERIOR_SIDE' | 'BEFORE_DETAIL' | 'AFTER_DETAIL'
+  ) => {
+    if (!selectedJob) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) return;
+
+      if (category === 'AFTER_DETAIL') {
+        addAfterPhoto(selectedJob.id, {
+          category,
+          slotLabel,
+          url: dataUrl,
+          uploadedBy: currentUser?.name || 'Technician',
+          fileName: file.name,
+        });
+      } else {
+        addIntakePhoto(selectedJob.id, {
+          category,
+          slotLabel,
+          url: dataUrl,
+          uploadedBy: currentUser?.name || 'Technician',
+          fileName: file.name,
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   // Helper to simulate capture with real detailing photography
   const handleSimulateCapture = (slotLabel: string, category: 'FUEL_METER' | 'EXTERIOR_SIDE' | 'BEFORE_DETAIL' | 'AFTER_DETAIL') => {
@@ -455,7 +502,7 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
                         </div>
 
                         {/* Slot controls */}
-                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                           {uploaded ? (
                             <>
                               <span className="text-[10px] text-slate-400 truncate max-w-[100px]">
@@ -474,14 +521,27 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
                             </>
                           ) : (
                             !isLocked && (
-                              <button
-                                type="button"
-                                onClick={() => handleSimulateCapture(slot.label, slot.category)}
-                                className="w-full py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-md text-[11px] flex items-center justify-center gap-1 transition-colors"
-                              >
-                                <Upload className="w-3 h-3" />
-                                <span>Capture / Upload</span>
-                              </button>
+                              <div className="flex items-center gap-1.5 w-full">
+                                <label className="flex-1 py-1.5 px-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer">
+                                  <Camera className="w-3 h-3" />
+                                  <span>Cam / File</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    className="hidden"
+                                    onChange={(e) => handleFileUpload(e, slot.label, slot.category)}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSimulateCapture(slot.label, slot.category)}
+                                  title="Use HD Demo Photo"
+                                  className="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-md text-[10px] transition-colors shrink-0"
+                                >
+                                  Demo
+                                </button>
+                              </div>
                             )
                           )}
                         </div>
@@ -801,7 +861,7 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
                           </div>
                         </div>
 
-                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                           {uploaded ? (
                             <>
                               <span className="text-[10px] text-slate-400 truncate max-w-[100px]">
@@ -820,14 +880,27 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
                             </>
                           ) : (
                             !isLocked && (
-                              <button
-                                type="button"
-                                onClick={() => handleSimulateCapture(slot.label, slot.category)}
-                                className="w-full py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold rounded-md text-[11px] flex items-center justify-center gap-1 transition-colors"
-                              >
-                                <Upload className="w-3 h-3" />
-                                <span>Upload Result</span>
-                              </button>
+                              <div className="flex items-center gap-1.5 w-full">
+                                <label className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer">
+                                  <Camera className="w-3 h-3" />
+                                  <span>Cam / File</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    className="hidden"
+                                    onChange={(e) => handleFileUpload(e, slot.label, slot.category)}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSimulateCapture(slot.label, slot.category)}
+                                  title="Use HD Demo Photo"
+                                  className="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-md text-[10px] transition-colors shrink-0"
+                                >
+                                  Demo
+                                </button>
+                              </div>
                             )
                           )}
                         </div>
@@ -897,9 +970,18 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ active
                       <span>Mark as Complete &amp; Lock Job</span>
                     </button>
                   ) : (
-                    <div className="px-4 py-2 bg-slate-100 text-slate-600 font-semibold rounded-lg text-xs flex items-center gap-1.5 shrink-0">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Job Locked &amp; Submitted to Review</span>
+                    <div className="flex items-center gap-2">
+                      <div className="px-4 py-2 bg-slate-100 text-slate-600 font-semibold rounded-lg text-xs flex items-center gap-1.5 shrink-0">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Job Locked &amp; Submitted to Review</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => updateJobCard(selectedJob.id, { isLockedByTechnician: false, status: 'IN_PROGRESS' })}
+                        className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold rounded-lg text-xs transition-colors shrink-0"
+                      >
+                        Unlock Bay for Edit
+                      </button>
                     </div>
                   )}
                 </div>

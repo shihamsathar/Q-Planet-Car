@@ -28,11 +28,26 @@ interface CustomerPortalProps {
 export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = 'status' }) => {
   const { currentUser, jobCards, vehicles, branches, invoices } = useApp();
 
-  // Find customer's job
-  const myJob = jobCards.find(j => j.customerId === currentUser?.id) || jobCards[0];
+  // Find customer's jobs (support multiple vehicles if customer has more than 1)
+  const customerJobs = jobCards.filter(j => j.customerId === currentUser?.id);
+  const [selectedJobId, setSelectedJobId] = useState<string>(() => {
+    return customerJobs[0]?.id || jobCards[0]?.id || '';
+  });
+
+  // Sync selectedJobId if currentUser changes
+  React.useEffect(() => {
+    const jobs = jobCards.filter(j => j.customerId === currentUser?.id);
+    if (jobs.length > 0 && !jobs.some(j => j.id === selectedJobId)) {
+      setSelectedJobId(jobs[0].id);
+    } else if (jobs.length === 0 && !jobCards.some(j => j.id === selectedJobId)) {
+      setSelectedJobId(jobCards[0]?.id || '');
+    }
+  }, [currentUser?.id, jobCards]);
+
+  const myJob = jobCards.find(j => j.id === selectedJobId) || customerJobs[0] || jobCards[0];
   const myVehicle = vehicles.find(v => v.id === myJob?.vehicleId);
   const myBranch = branches.find(b => b.id === myJob?.branchId);
-  const myInvoice = invoices.find(inv => inv.jobCardId === myJob?.id) || invoices[0];
+  const myInvoice = invoices.find(inv => inv.jobCardId === myJob?.id);
 
   const [activeView, setActiveView] = useState<'status' | 'blueprint' | 'comparison' | 'invoice'>(
     (activeSubTab as any) || 'status'
@@ -46,10 +61,12 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
 
   // Before & After comparison slider state (0 to 100)
   const [sliderPosition, setSliderPosition] = useState<number>(50);
+  const [selectedBeforePhoto, setSelectedBeforePhoto] = useState<string | null>(null);
+  const [selectedAfterPhoto, setSelectedAfterPhoto] = useState<string | null>(null);
 
   // Sample before and after images
-  const beforePhoto = myJob?.intakePhotos[0]?.url || APP_IMAGES.beforeDetailing;
-  const afterPhoto = myJob?.afterPhotos[0]?.url || APP_IMAGES.afterDetailing;
+  const beforePhoto = selectedBeforePhoto || myJob?.intakePhotos[0]?.url || APP_IMAGES.beforeDetailing;
+  const afterPhoto = selectedAfterPhoto || myJob?.afterPhotos[0]?.url || APP_IMAGES.afterDetailing;
 
   const handlePrintInvoice = () => {
     window.print();
@@ -90,6 +107,32 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
           <p className="text-xs text-slate-500 mt-0.5">
             Service Report for <span className="font-semibold text-slate-800">{myVehicle?.year} {myVehicle?.make} {myVehicle?.model}</span> (Plate: {myVehicle?.plateNumber})
           </p>
+
+          {/* Multi-vehicle switcher if customer has more than 1 vehicle enrolled */}
+          {customerJobs.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-3 pt-3 border-t border-slate-100">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Your Vehicles:</span>
+              {customerJobs.map(j => {
+                const v = vehicles.find(x => x.id === j.vehicleId);
+                const isSel = j.id === myJob?.id;
+                return (
+                  <button
+                    key={j.id}
+                    type="button"
+                    onClick={() => setSelectedJobId(j.id)}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 cursor-pointer ${
+                      isSel
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>{v?.year} {v?.make} {v?.model}</span>
+                    <span className="text-[10px] ml-1.5 opacity-80 font-mono">({v?.plateNumber})</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* View Switcher Tabs (Mobile Scrollable) */}
@@ -429,26 +472,55 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
 
           {/* Before & After Photo Gallery */}
           <div className="pt-4 border-t border-slate-100">
-            <h4 className="text-xs font-bold text-slate-800 mb-3">All Intake vs. Completion Documentation Photos</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-bold text-slate-800">All Intake vs. Completion Documentation Photos</h4>
+              <span className="text-[10px] text-blue-600 font-medium">Click any photo to compare in slider above</span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {myJob?.intakePhotos.slice(0, 4).map((p) => (
-                <div key={p.id} className="group relative rounded-lg overflow-hidden border border-slate-200">
-                  <img src={p.url} alt={p.slotLabel} className="aspect-4/3 w-full object-cover" />
-                  <div className="p-2 bg-white text-[11px]">
-                    <span className="font-bold text-slate-800 block truncate">{p.slotLabel}</span>
-                    <span className="text-slate-400">Intake Inspection</span>
-                  </div>
-                </div>
-              ))}
-              {myJob?.afterPhotos.slice(0, 4).map((p) => (
-                <div key={p.id} className="group relative rounded-lg overflow-hidden border border-emerald-200">
-                  <img src={p.url} alt={p.slotLabel} className="aspect-4/3 w-full object-cover" />
-                  <div className="p-2 bg-emerald-50/50 text-[11px]">
-                    <span className="font-bold text-emerald-900 block truncate">{p.slotLabel}</span>
-                    <span className="text-emerald-700 font-semibold">After Detailing</span>
-                  </div>
-                </div>
-              ))}
+              {myJob?.intakePhotos.slice(0, 4).map((p) => {
+                const isCurrent = beforePhoto === p.url;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBeforePhoto(p.url);
+                      setSliderPosition(50);
+                    }}
+                    className={`group relative rounded-lg overflow-hidden border text-left cursor-pointer transition-all ${
+                      isCurrent ? 'ring-2 ring-blue-600 border-blue-600' : 'border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    <img src={p.url} alt={p.slotLabel} className="aspect-4/3 w-full object-cover" />
+                    <div className="p-2 bg-white text-[11px]">
+                      <span className="font-bold text-slate-800 block truncate">{p.slotLabel}</span>
+                      <span className="text-slate-500 font-semibold text-[10px]">Before Detailing</span>
+                    </div>
+                  </button>
+                );
+              })}
+              {myJob?.afterPhotos.slice(0, 4).map((p) => {
+                const isCurrent = afterPhoto === p.url;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAfterPhoto(p.url);
+                      setSliderPosition(50);
+                    }}
+                    className={`group relative rounded-lg overflow-hidden border text-left cursor-pointer transition-all ${
+                      isCurrent ? 'ring-2 ring-emerald-600 border-emerald-600' : 'border-emerald-200 hover:border-emerald-400'
+                    }`}
+                  >
+                    <img src={p.url} alt={p.slotLabel} className="aspect-4/3 w-full object-cover" />
+                    <div className="p-2 bg-emerald-50/50 text-[11px]">
+                      <span className="font-bold text-emerald-900 block truncate">{p.slotLabel}</span>
+                      <span className="text-emerald-700 font-semibold text-[10px]">After Detailing</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -463,149 +535,174 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ activeSubTab = '
       )}
 
       {/* VIEW 4: DIGITAL QATAR TAX INVOICE */}
-      {activeView === 'invoice' && (
-        <div className="space-y-4">
-          
-          {/* Print Action Bar */}
-          <div className="flex items-center justify-between no-print">
-            <p className="text-xs text-slate-500">
-              Official Digital Tax Invoice issued by Q Planet Car Care W.L.L. (State of Qatar)
-            </p>
-            <button
-              type="button"
-              onClick={handlePrintInvoice}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5 text-blue-600" />
-              <span>Print Official Invoice / Save PDF</span>
-            </button>
-          </div>
+      {activeView === 'invoice' && (() => {
+        const subtotalQAR = myInvoice?.subtotalQAR ?? myJob?.packagePriceQAR ?? 0;
+        const discountQAR = myInvoice?.discountQAR ?? myJob?.discountQAR ?? 0;
+        const totalQAR = myInvoice?.totalQAR ?? myJob?.finalPriceQAR ?? Math.max(0, subtotalQAR - discountQAR);
+        const invoiceNumber = myInvoice?.invoiceNumber || (myJob?.jobNumber ? `INV-${myJob.jobNumber.replace('QP-', '')}` : 'INV-QP-4091');
+        const invoiceDate = myInvoice?.date || (myJob?.createdAt ? myJob.createdAt.split('T')[0] : '2026-03-28');
+        const items = myInvoice?.items && myInvoice.items.length > 0
+          ? myInvoice.items
+          : [
+              {
+                id: 'item-base',
+                description: myJob?.servicePackage || 'Premium Auto Detailing & Ceramic Protection',
+                quantity: 1,
+                unitPriceQAR: subtotalQAR,
+                totalQAR: subtotalQAR,
+              }
+            ];
 
-          {/* Printable Invoice Container */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-12 shadow-sm max-w-3xl mx-auto print:border-none print:shadow-none print:p-0">
+        return (
+          <div className="space-y-4">
             
-            {/* Invoice Header */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between pb-8 border-b border-slate-200 gap-4">
-              <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Q PLANET</h1>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-0.5">
-                  Automotive Detailing &amp; Ceramic Technology W.L.L.
-                </p>
-                <div className="mt-3 text-xs text-slate-600 space-y-0.5">
-                  <p>{myBranch?.name}</p>
-                  <p>{myBranch?.address}</p>
-                  <p>State of Qatar · Tel: {myBranch?.phone}</p>
-                  <p className="font-mono text-slate-500">CR No: {myBranch?.crNumber}</p>
-                </div>
-              </div>
-
-              <div className="sm:text-right">
-                <span className="text-xs font-bold px-3 py-1 rounded-md bg-emerald-100 text-emerald-800 uppercase tracking-wide inline-block mb-2">
-                  TAX INVOICE / PAID
-                </span>
-                <p className="text-sm font-bold font-mono text-slate-900">
-                  {myInvoice?.invoiceNumber || 'INV-QP-4091'}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Date: {myInvoice?.date || '2026-03-28'}</p>
-                <p className="text-xs text-slate-500 font-mono">Job Ref: {myJob?.jobNumber}</p>
-              </div>
+            {/* Print Action Bar */}
+            <div className="flex items-center justify-between no-print">
+              <p className="text-xs text-slate-500">
+                Official Digital Tax Invoice issued by Q Planet Car Care W.L.L. (State of Qatar)
+              </p>
+              <button
+                type="button"
+                onClick={handlePrintInvoice}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-blue-600" />
+                <span>Print Official Invoice / Save PDF</span>
+              </button>
             </div>
 
-            {/* Bill To & Vehicle Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-b border-slate-100 text-xs">
-              <div>
-                <span className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Bill To Client</span>
-                <p className="text-sm font-bold text-slate-900">{currentUser?.name}</p>
-                <p className="text-slate-600">{currentUser?.profession}</p>
-                <p className="font-mono text-slate-600 mt-0.5">Qatar ID: {currentUser?.qid}</p>
-                <p className="font-mono text-slate-600">Mobile: {currentUser?.phone}</p>
-              </div>
-
-              <div className="sm:text-right">
-                <span className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Vehicle Specification</span>
-                <p className="text-sm font-bold text-slate-900">{myVehicle?.year} {myVehicle?.make} {myVehicle?.model}</p>
-                <p className="text-slate-600">Colour: {myVehicle?.color}</p>
-                <p className="font-mono font-bold text-slate-900 mt-0.5">
-                  Qatar Plate: {myVehicle?.plateNumber} ({myVehicle?.plateType})
-                </p>
-                <p className="font-mono text-slate-400 text-[11px]">VIN: {myVehicle?.vinNumber || 'WP0AB2A99PS129481'}</p>
-              </div>
-            </div>
-
-            {/* Itemized Line Items Table */}
-            <div className="py-6">
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-400 uppercase font-semibold text-[11px]">
-                    <th className="py-2.5">Service Description</th>
-                    <th className="py-2.5 text-center">Qty</th>
-                    <th className="py-2.5 text-right">Unit Price (QAR)</th>
-                    <th className="py-2.5 text-right">Total (QAR)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {myInvoice?.items.map((item) => (
-                    <tr key={item.id} className="text-slate-800">
-                      <td className="py-3 font-medium">{item.description}</td>
-                      <td className="py-3 text-center font-mono">{item.quantity}</td>
-                      <td className="py-3 text-right font-mono tabular-nums">{item.unitPriceQAR.toLocaleString()}</td>
-                      <td className="py-3 text-right font-bold font-mono tabular-nums">{item.totalQAR.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Invoice Totals */}
-            <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-start justify-between gap-6 text-xs">
-              <div className="space-y-1 text-slate-500 max-w-sm">
-                <p className="font-semibold text-slate-800">Payment Information:</p>
-                <p>Settled via Qatar Central Bank NAPS Gateway · Card Auth Code #840921</p>
-                <p className="text-[11px]">All detailing coatings backed by Q Planet 5-Year Nationwide Warranty.</p>
-              </div>
-
-              <div className="w-full sm:w-64 space-y-2">
-                <div className="flex justify-between text-slate-600">
-                  <span>Subtotal:</span>
-                  <span className="font-mono font-medium tabular-nums">{myInvoice?.subtotalQAR.toLocaleString()} QAR</span>
-                </div>
-                {myInvoice?.discountQAR > 0 && (
-                  <div className="flex justify-between text-emerald-700 font-semibold">
-                    <span>Loyalty Courtesy Discount:</span>
-                    <span className="font-mono tabular-nums">-{myInvoice.discountQAR.toLocaleString()} QAR</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-slate-600">
-                  <span>Applicable Qatar Tax / VAT:</span>
-                  <span className="font-mono">0.00 QAR (0%)</span>
-                </div>
-                <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
-                  <span>Total Amount Paid:</span>
-                  <span className="font-mono text-blue-600 tabular-nums">{myInvoice?.totalQAR.toLocaleString()} QAR</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Official Stamp & QR Code representation */}
-            <div className="mt-12 pt-6 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-              <div className="flex items-center gap-3">
-                <div className="w-16 h-16 bg-slate-100 border border-slate-300 rounded flex items-center justify-center p-1 text-[8px] font-mono text-center">
-                  [QATAR TAX DIGITAL QR]
-                </div>
+            {/* Printable Invoice Container */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-12 shadow-sm max-w-3xl mx-auto print:border-none print:shadow-none print:p-0">
+              
+              {/* Invoice Header */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between pb-8 border-b border-slate-200 gap-4">
                 <div>
-                  <p className="font-semibold text-slate-700">Electronically Verified Tax Document</p>
-                  <p>Ministry of Commerce &amp; Industry (State of Qatar)</p>
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight">Q PLANET</h1>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-0.5">
+                    Automotive Detailing &amp; Ceramic Technology W.L.L.
+                  </p>
+                  <div className="mt-3 text-xs text-slate-600 space-y-0.5">
+                    <p>{myBranch?.name}</p>
+                    <p>{myBranch?.address}</p>
+                    <p>State of Qatar · Tel: {myBranch?.phone}</p>
+                    <p className="font-mono text-slate-500">CR No: {myBranch?.crNumber}</p>
+                  </div>
+                </div>
+
+                <div className="sm:text-right">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-md uppercase tracking-wide inline-block mb-2 ${
+                    myJob?.status === 'DELIVERED'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : myJob?.status === 'COMPLETED'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {myJob?.status === 'DELIVERED' ? 'TAX INVOICE / PAID' : myJob?.status === 'COMPLETED' ? 'COMPLETED / READY FOR SETTLEMENT' : 'ESTIMATE & WORK ORDER'}
+                  </span>
+                  <p className="text-sm font-bold font-mono text-slate-900">
+                    {invoiceNumber}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">Date: {invoiceDate}</p>
+                  <p className="text-xs text-slate-500 font-mono">Job Ref: {myJob?.jobNumber}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-slate-800">Q Planet Auto Care W.L.L.</p>
-                <p>Authorized Quality Seal</p>
-              </div>
-            </div>
 
+              {/* Bill To & Vehicle Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-b border-slate-100 text-xs">
+                <div>
+                  <span className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Bill To Client</span>
+                  <p className="text-sm font-bold text-slate-900">{currentUser?.name}</p>
+                  <p className="text-slate-600">{currentUser?.profession}</p>
+                  <p className="font-mono text-slate-600 mt-0.5">Qatar ID: {currentUser?.qid}</p>
+                  <p className="font-mono text-slate-600">Mobile: {currentUser?.phone}</p>
+                </div>
+
+                <div className="sm:text-right">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Vehicle Specification</span>
+                  <p className="text-sm font-bold text-slate-900">{myVehicle?.year} {myVehicle?.make} {myVehicle?.model}</p>
+                  <p className="text-slate-600">Colour: {myVehicle?.color}</p>
+                  <p className="font-mono font-bold text-slate-900 mt-0.5">
+                    Qatar Plate: {myVehicle?.plateNumber} ({myVehicle?.plateType})
+                  </p>
+                  <p className="font-mono text-slate-400 text-[11px]">VIN: {myVehicle?.vinNumber || 'WP0AB2A99PS129481'}</p>
+                </div>
+              </div>
+
+              {/* Itemized Line Items Table */}
+              <div className="py-6">
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-400 uppercase font-semibold text-[11px]">
+                      <th className="py-2.5">Service Description</th>
+                      <th className="py-2.5 text-center">Qty</th>
+                      <th className="py-2.5 text-right">Unit Price (QAR)</th>
+                      <th className="py-2.5 text-right">Total (QAR)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {items.map((item) => (
+                      <tr key={item.id} className="text-slate-800">
+                        <td className="py-3 font-medium">{item.description}</td>
+                        <td className="py-3 text-center font-mono">{item.quantity}</td>
+                        <td className="py-3 text-right font-mono tabular-nums">{item.unitPriceQAR.toLocaleString()}</td>
+                        <td className="py-3 text-right font-bold font-mono tabular-nums">{item.totalQAR.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Invoice Totals */}
+              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-start justify-between gap-6 text-xs">
+                <div className="space-y-1 text-slate-500 max-w-sm">
+                  <p className="font-semibold text-slate-800">Payment Information:</p>
+                  <p>Settled via Qatar Central Bank NAPS Gateway · Card Auth Code #840921</p>
+                  <p className="text-[11px]">All detailing coatings backed by Q Planet 5-Year Nationwide Warranty.</p>
+                </div>
+
+                <div className="w-full sm:w-64 space-y-2">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal:</span>
+                    <span className="font-mono font-medium tabular-nums">{subtotalQAR.toLocaleString()} QAR</span>
+                  </div>
+                  {discountQAR > 0 && (
+                    <div className="flex justify-between text-emerald-700 font-semibold">
+                      <span>Loyalty Courtesy Discount:</span>
+                      <span className="font-mono tabular-nums">-{discountQAR.toLocaleString()} QAR</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-600">
+                    <span>Applicable Qatar Tax / VAT:</span>
+                    <span className="font-mono">0.00 QAR (0%)</span>
+                  </div>
+                  <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
+                    <span>Total Amount:</span>
+                    <span className="font-mono text-blue-600 tabular-nums">{totalQAR.toLocaleString()} QAR</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Official Stamp & QR Code representation */}
+              <div className="mt-12 pt-6 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 bg-slate-100 border border-slate-300 rounded flex items-center justify-center p-1 text-[8px] font-mono text-center">
+                    [QATAR TAX DIGITAL QR]
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-700">Electronically Verified Tax Document</p>
+                    <p>Ministry of Commerce &amp; Industry (State of Qatar)</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-slate-800">Q Planet Auto Care W.L.L.</p>
+                  <p>Authorized Quality Seal</p>
+                </div>
+              </div>
+
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );
